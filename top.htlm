@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Russland-Ukraine-Krieg | Kontext der Internationalen Beziehungen</title>
+    
+    <!-- External Libraries -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+    <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
+    
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
+        
+        :root {
+            --primary: #e11d48;
+            --accent: #facc15;
+            --bg-dark: #0f172a;
+            --card-bg: #1e293b;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-dark);
+            color: #f1f5f9;
+            scroll-behavior: smooth;
+        }
+
+        .nav-link {
+            transition: all 0.3s ease;
+            position: relative;
+        }
+        
+        .nav-link::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background: var(--primary);
+            transition: width 0.3s;
+        }
+
+        .nav-link:hover::after {
+            width: 100%;
+        }
+
+        .glass-card {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        #map {
+            height: 600px;
+            width: 100%;
+            border-radius: 12px;
+            z-index: 10;
+        }
+
+        .accordion-content {
+            display: none;
+            overflow: hidden;
+            background: rgba(15, 23, 42, 0.3);
+        }
+
+        .accordion-item.active .accordion-content {
+            display: block;
+        }
+
+        .accordion-item.active i[data-lucide="chevron-down"] {
+            transform: rotate(180deg);
+        }
+
+        .timeline-item::before {
+            content: '';
+            position: absolute;
+            left: -9px;
+            top: 0;
+            width: 18px;
+            height: 18px;
+            background: var(--primary);
+            border-radius: 50%;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 400px;
+            width: 100%;
+        }
+
+        .hover-info {
+            position: relative;
+            cursor: help;
+            border-bottom: 1px dotted var(--accent);
+        }
+
+        .hover-info-box {
+            visibility: hidden;
+            width: 250px;
+            background-color: #334155;
+            color: #fff;
+            text-align: center;
+            border-radius: 6px;
+            padding: 10px;
+            position: absolute;
+            z-index: 100;
+            bottom: 125%;
+            left: 50%;
+            margin-left: -125px;
+            opacity: 0;
+            transition: opacity 0.3s;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
+        }
+
+        .hover-info:hover .hover-info-box {
+            visibility: visible;
+            opacity: 1;
+        }
+    </style>
+</head>
+<body class="antialiased">
+
+    <!-- Navigation -->
+    <nav class="fixed top-0 w-full z-50 glass-card py-4">
+        <div class="container mx-auto px-6 flex justify-between items-center">
+            <div class="flex items-center space-x-2">
+                <i data-lucide="globe-2" class="text-rose-600"></i>
+                <span class="font-bold text-xl tracking-tighter">IB-ANALYSE <span class="text-rose-500">UKRAINE</span></span>
+            </div>
+            <div class="hidden lg:flex space-x-6 text-sm font-medium">
+                <a href="#intro" class="nav-link">Einführung</a>
+                <a href="#history" class="nav-link">Historie</a>
+                <a href="#map-section" class="nav-link">Lagekarte</a>
+                <a href="#actors" class="nav-link">Akteure</a>
+                <a href="#theories" class="nav-link">IB-Theorien</a>
+                <a href="#global" class="nav-link">Globales</a>
+                <a href="#options" class="nav-link">Handlung</a>
+                <a href="#future" class="nav-link">Zukunft</a>
+            </div>
+            <button class="lg:hidden" id="mobileMenuBtn">
+                <i data-lucide="menu"></i>
+            </button>
+        </div>
+    </nav>
+
+    <!-- Header Section -->
+    <header class="relative h-screen flex items-center justify-center overflow-hidden">
+        <div class="absolute inset-0 z-0">
+            <div class="absolute inset-0 bg-gradient-to-b from-slate-900/80 to-slate-900"></div>
+            <img src="https://images.unsplash.com/photo-1517048676732-d65bc937f952?auto=format&fit=crop&q=80&w=2000" 
+                 class="w-full h-full object-cover" alt="Hintergrundbild">
+        </div>
+        <div class="container mx-auto px-6 relative z-10 text-center" data-aos="fade-up">
+            <h1 class="text-5xl md:text-7xl font-extrabold mb-6 leading-tight">
+                Der Russland-Ukraine-Krieg im <br>
+                <span class="text-rose-500">Kontext Internationaler Beziehungen</span>
+            </h1>
+            <p class="text-xl md:text-2xl text-slate-300 max-w-3xl mx-auto mb-10">
+                Eine multiperspektivische Analyse der Sicherheitsordnung Europas, 
+                geopolitischen Verschiebungen und theoretischen Erklärungsmodelle.
+            </p>
+            <div class="flex flex-wrap justify-center gap-4">
+                <a href="#intro" class="bg-rose-600 hover:bg-rose-700 px-8 py-3 rounded-full font-bold transition">Jetzt analysieren</a>
+                <a href="#map-section" class="bg-slate-700 hover:bg-slate-600 px-8 py-3 rounded-full font-bold transition flex items-center">
+                    <i data-lucide="map" class="mr-2"></i> Interaktive Karte
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <!-- 1. Einführung -->
+    <section id="intro" class="py-24 bg-slate-900">
+        <div class="container mx-auto px-6">
+            <div class="grid md:grid-cols-2 gap-12 items-center">
+                <div data-aos="fade-right">
+                    <h2 class="text-3xl font-bold mb-6 flex items-center">
+                        <i data-lucide="info" class="mr-3 text-rose-500"></i> Einführung & Definition
+                    </h2>
+                    <p class="text-slate-300 leading-relaxed mb-6">
+                        Der am 24. Februar 2022 begonnene völkerrechtswidrige Angriffskrieg Russlands gegen die Ukraine markiert eine 
+                        <span class="hover-info">Zeitenwende<span class="hover-info-box">Begriff für den fundamentalen Wandel der dt. Außen- und Sicherheitspolitik.</span></span> 
+                        in der europäischen Sicherheitsarchitektur. Es handelt sich nicht nur um einen territorialen Konflikt, sondern um eine fundamentale Infragestellung der regelbasierten internationalen Ordnung.
+                    </p>
+                    <p class="text-slate-300 leading-relaxed">
+                        In der Politikwissenschaft wird dieser Krieg als <strong>internationaler Systemkonflikt</strong> analysiert, in dem Souveränität, Einflusssphären und das Selbstbestimmungsrecht der Völker aufeinanderprallen.
+                    </p>
+                </div>
+                <div class="grid grid-cols-2 gap-4" data-aos="fade-left">
+                    <div class="bg-rose-900/20 p-6 rounded-xl border border-rose-500/30 text-center">
+                        <span class="block text-3xl font-bold text-rose-500">24.02.22</span>
+                        <span class="text-sm uppercase text-slate-400">Invasionsbeginn</span>
+                    </div>
+                    <div class="bg-slate-800 p-6 rounded-xl border border-slate-700 text-center">
+                        <span class="block text-3xl font-bold text-accent">~8 Mio+</span>
+                        <span class="text-sm uppercase text-slate-400">Geflüchtete</span>
+                    </div>
+                    <div class="bg-slate-800 p-6 rounded-xl border border-slate-700 text-center">
+                        <span class="block text-3xl font-bold text-blue-400">14.000+</span>
+                        <span class="text-sm uppercase text-slate-400">Einzel-Sanktionen</span>
+                    </div>
+                    <div class="bg-slate-800 p-6 rounded-xl border border-slate-700 text-center">
+                        <span class="block text-3xl font-bold text-green-400">$200 Mrd+</span>
+                        <span class="text-sm uppercase text-slate-400">Internat. Hilfe</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 2. Historische Entwicklung & Ursachen -->
+    <section id="history" class="py-24 bg-slate-800">
+        <div class="container mx-auto px-6">
+            <h2 class="text-3xl font-bold mb-12 text-center">Historische Entwicklung & Tiefenursachen</h2>
+            <div class="relative border-l-2 border-rose-600 ml-6 space-y-12">
+                
+                <div class="timeline-item pl-8 relative" data-aos="fade-up">
+                    <h3 class="text-xl font-bold text-rose-500">Die Kiewer Rus & Gemeinsame Wurzeln (9.–13. Jh.)</h3>
+                    <p class="mt-2 text-slate-300 text-sm leading-relaxed">
+                        Sowohl Russland als auch die Ukraine führen ihre kulturelle und religiöse Herkunft auf die Kiewer Rus zurück. Das russische Narrativ der "dreieinigen russischen Nation" dient heute als ideologische Begründung, um der Ukraine eine eigenständige historische Existenzberechtigung abzusprechen.
+                    </p>
+                </div>
+
+                <div class="timeline-item pl-8 relative" data-aos="fade-up">
+                    <h3 class="text-xl font-bold text-rose-500">1991–1997: Post-Sowjetische Ordnung & Budapester Memorandum</h3>
+                    <p class="mt-2 text-slate-300 text-sm leading-relaxed mb-4">
+                        Nach dem Zerfall der UdSSR erlangt die Ukraine ihre volle Souveränität. Im <strong>Budapester Memorandum (1994)</strong> verzichtet die Ukraine auf das drittgrößte Atomwaffenarsenal der Welt. Im Gegenzug garantieren Russland, die USA und Großbritannien die territoriale Unversehrtheit der Ukraine. 1997 folgt der <strong>NATO-Russland-Grundakt</strong>, der die Sicherheitszusammenarbeit regelt.
+                    </p>
+                </div>
+
+                <div class="timeline-item pl-8 relative" data-aos="fade-up">
+                    <h3 class="text-xl font-bold text-rose-500">2004–2008: Orange Revolution & Bukarest-Gipfel</h3>
+                    <p class="mt-2 text-slate-300 text-sm leading-relaxed">
+                        Die <strong>Orange Revolution (2004)</strong> markiert den Wunsch der Ukraine nach demokratischer Westbindung. Auf dem <strong>NATO-Gipfel in Bukarest (2008)</strong> wird der Ukraine und Georgien eine grundsätzliche NATO-Beitrittsperspektive zugesichert. Russland wertet dies als Überschreiten einer "roten Linie" und als Bedrohung seiner Einflusssphäre.
+                    </p>
+                </div>
+
+                <div class="timeline-item pl-8 relative" data-aos="fade-up">
+                    <h3 class="text-xl font-bold text-rose-500">2014: Euromaidan, Krim-Annexion & Donbass-Krieg</h3>
+                    <p class="mt-2 text-slate-300 text-sm leading-relaxed">
+                        Nach der Flucht des pro-russischen Präsidenten Janukowytsch (Euromaidan) annektiert Russland völkerrechtswidrig die Halbinsel Krim. Zeitgleich beginnt ein hybrider Krieg im Donbass durch von Russland unterstützte Separatisten. Die <strong>Minsker Abkommen (I & II)</strong> scheitern in den Folgejahren an der Umsetzung politischer Autonomieforderungen und Waffenstillstandsbrüchen.
+                    </p>
+                </div>
+
+                <div class="timeline-item pl-8 relative" data-aos="fade-up">
+                    <h3 class="text-xl font-bold text-rose-500">24. Februar 2022: Die Großinvasion</h3>
+                    <p class="mt-2 text-slate-300 text-sm leading-relaxed">
+                        Russland startet eine umfassende Invasion unter dem Vorwand der "Entnazifizierung" und "Demilitarisierung". Tatsächlich zielt die Operation auf einen Regime-Change in Kiew und die dauerhafte Zerschlagung der ukrainischen Eigenstaatlichkeit ab.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Ursachen-Zusammenfassung -->
+            <div class="mt-16 grid md:grid-cols-2 gap-8">
+                <div class="bg-slate-700/50 p-6 rounded-xl border border-rose-500/20">
+                    <h4 class="font-bold text-rose-500 mb-4 flex items-center"><i data-lucide="alert-triangle" class="mr-2"></i> Strukturelle Ursachen</h4>
+                    <ul class="text-sm text-slate-300 space-y-2">
+                        <li>• <strong>NATO-Osterweiterung:</strong> Perzeption einer Einkreisung durch den Westen.</li>
+                        <li>• <strong>Sicherheitsdilemma:</strong> Rüstung auf einer Seite führt zu Angst und Gegenrüstung auf der anderen.</li>
+                        <li>• <strong>Einflusssphären:</strong> Russischer Anspruch auf Dominanz im "nahen Ausland".</li>
+                    </ul>
+                </div>
+                <div class="bg-slate-700/50 p-6 rounded-xl border border-rose-500/20">
+                    <h4 class="font-bold text-rose-500 mb-4 flex items-center"><i data-lucide="user-check" class="mr-2"></i> Ideologische Ursachen</h4>
+                    <ul class="text-sm text-slate-300 space-y-2">
+                        <li>• <strong>Neo-Imperialismus:</strong> Der Wunsch nach Wiederherstellung alter imperialer Größe.</li>
+                        <li>• <strong>Angst vor Demokratie:</strong> Erfolgreiche Demokratie in der Ukraine als Gefahr für das autokratische System in Russland.</li>
+                        <li>• <strong>Ethno-Nationalismus:</strong> Schutz "ethnischer Russen" als Vorwand für Expansion.</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 3. Interaktive Karte -->
+    <section id="map-section" class="py-24 bg-slate-900">
+        <div class="container mx-auto px-6">
+            <h2 class="text-3xl font-bold mb-4 text-center">Interaktive Lagekarte & Fluchtrouten</h2>
+            <p class="text-center text-slate-400 mb-12 max-w-2xl mx-auto">
+                Die Karte zeigt strategische Brennpunkte sowie die Korridore, über die Millionen Menschen vor den Kämpfen geflohen sind.
+            </p>
+            <div id="map" class="shadow-2xl border border-slate-700"></div>
+            <div class="mt-6 flex flex-wrap justify-center gap-6">
+                <div class="flex items-center text-sm"><span class="w-3 h-3 bg-red-600 rounded-full mr-2"></span> Aktive Frontgebiete</div>
+                <div class="flex items-center text-sm"><span class="w-3 h-3 border-t-2 border-dashed border-yellow-500 w-6 mr-2"></span> Fluchtkorridore / Routen</div>
+                <div class="flex items-center text-sm"><span class="w-3 h-3 bg-blue-600 rounded-full mr-2"></span> NATO-Gebiet</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 4. Akteure & Interessen (AUSFÜHRLICHER) -->
+    <section id="actors" class="py-24 bg-slate-800">
+        <div class="container mx-auto px-6">
+            <h2 class="text-3xl font-bold mb-12 text-center">Akteure & Interessenlagen</h2>
+            <div class="max-w-5xl mx-auto space-y-6">
+                
+                <!-- Russische Föderation -->
+                <div class="accordion-item bg-slate-700 rounded-lg overflow-hidden border border-slate-600">
+                    <button class="w-full p-6 text-left flex justify-between items-center hover:bg-slate-600 transition focus:outline-none" onclick="toggleAcc(this)">
+                        <span class="text-xl font-bold flex items-center"><i data-lucide="shield" class="mr-3 text-red-500"></i> Russische Föderation</span>
+                        <i data-lucide="chevron-down" class="transition-transform duration-300"></i>
+                    </button>
+                    <div class="accordion-content p-6 border-t border-slate-600 text-slate-300">
+                        <div class="grid md:grid-cols-2 gap-8">
+                            <div>
+                                <h4 class="font-bold text-rose-400 mb-3 text-lg border-b border-rose-400/30 pb-1">Geopolitische & Ideologische Interessen</h4>
+                                <ul class="list-disc list-inside space-y-2 text-sm">
+                                    <li><strong>Eurasische Integration:</strong> Wiederherstellung einer von Moskau geführten Einflusssphäre als Gegengewicht zum Westen.</li>
+                                    <li><strong>Sicherheitsgürtel:</strong> Die Ukraine als „Pufferzone“ gegen die NATO-Osterweiterung sichern.</li>
+                                    <li><strong>Regime-Stabilität:</strong> Unterbindung von „Farbrevolutionen“ im nahen Ausland, die das eigene autokratische Modell gefährden könnten.</li>
+                                    <li><strong>Ressourcen-Kontrolle:</strong> Zugriff auf ukrainische Agrarflächen, Industriegebiete (Donbass) und Schwarzmeer-Häfen.</li>
+                                </ul>
+                            </div>
+                            <div>
+                                <h4 class="font-bold text-rose-400 mb-3 text-lg border-b border-rose-400/30 pb-1">Handlungslogik</h4>
+                                <p class="text-sm leading-relaxed">Russland operiert aus einer <strong>revisionistischen Logik</strong> heraus. Die Welt wird als Arena des Mächtekampfes begriffen, in dem internationales Recht zweitrangig gegenüber nationalen Sicherheitsinteressen ist. Der Einsatz von <strong>hybriden Mitteln</strong> (Desinformation, Energie-Erpressung) ergänzt die konventionelle Kriegsführung.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Ukraine -->
+                <div class="accordion-item bg-slate-700 rounded-lg overflow-hidden border border-slate-600">
+                    <button class="w-full p-6 text-left flex justify-between items-center hover:bg-slate-600 transition focus:outline-none" onclick="toggleAcc(this)">
+                        <span class="text-xl font-bold flex items-center"><i data-lucide="flag" class="mr-3 text-blue-500"></i> Ukraine</span>
+                        <i data-lucide="chevron-down" class="transition-transform duration-300"></i>
+                    </button>
+                    <div class="accordion-content p-6 border-t border-slate-600 text-slate-300">
+                        <div class="grid md:grid-cols-2 gap-8">
+                            <div>
+                                <h4 class="font-bold text-blue-400 mb-3 text-lg border-b border-blue-400/30 pb-1">Existenzielle & Politische Interessen</h4>
+                                <ul class="list-disc list-inside space-y-2 text-sm">
+                                    <li><strong>Territoriale Integrität:</strong> Die vollständige Wiederherstellung der Staatsgrenzen von 1991 (inklusive Krim und Donbass).</li>
+                                    <li><strong>Westbindung:</strong> Formeller Beitritt zu EU und NATO als Garantie für dauerhafte Sicherheit und Prosperität.</li>
+                                    <li><strong>Nationale Identität:</strong> Abkoppelung vom russischen Kulturraum und Stärkung einer eigenständigen, demokratischen Staatsbürgeridentität.</li>
+                                    <li><strong>Gerechtigkeit:</strong> Bestrafung von Kriegsverbrechen und Reparationszahlungen durch Russland.</li>
+                                </ul>
+                            </div>
+                            <div>
+                                <h4 class="font-bold text-blue-400 mb-3 text-lg border-b border-blue-400/30 pb-1">Resilienz-Strategie</h4>
+                                <p class="text-sm leading-relaxed">Die ukrainische Führung setzt auf <strong>internationale Legitimierung</strong> und eine massive <strong>Mobilisierung der Zivilgesellschaft</strong>. Der Krieg wird als Kampf um das nackte Überleben und die Freiheit der westlichen Welt kommuniziert.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- USA & NATO -->
+                <div class="accordion-item bg-slate-700 rounded-lg overflow-hidden border border-slate-600">
+                    <button class="w-full p-6 text-left flex justify-between items-center hover:bg-slate-600 transition focus:outline-none" onclick="toggleAcc(this)">
+                        <span class="text-xl font-bold flex items-center"><i data-lucide="globe" class="mr-3 text-green-500"></i> USA & NATO</span>
+                        <i data-lucide="chevron-down" class="transition-transform duration-300"></i>
+                    </button>
+                    <div class="accordion-content p-6 border-t border-slate-600 text-slate-300">
+                        <div class="grid md:grid-cols-2 gap-8">
+                            <div>
+                                <h4 class="font-bold text-green-400 mb-3 text-lg border-b border-green-400/30 pb-1">Globale & Regionale Interessen</h4>
+                                <ul class="list-disc list-inside space-y-2 text-sm">
+                                    <li><strong>Erhalt der Weltordnung:</strong> Verteidigung des Völkerrechts, um Präzedenzfälle für andere revisionistische Mächte (z.B. China/Taiwan) zu verhindern.</li>
+                                    <li><strong>Containment:</strong> Russland militärisch und ökonomisch so weit schwächen, dass es keine Bedrohung für das NATO-Bündnisgebiet mehr darstellt.</li>
+                                    <li><strong>Bündnis-Kohäsion:</strong> Stärkung der Einheit der transatlantischen Partner und Reaktivierung der militärischen Einsatzbereitschaft.</li>
+                                </ul>
+                            </div>
+                            <div>
+                                <h4 class="font-bold text-green-400 mb-3 text-lg border-b border-green-400/30 pb-1">Grenzziehung</h4>
+                                <p class="text-sm leading-relaxed">Das Hauptinteresse der USA/NATO liegt in der <strong>Vermeidung eines direkten Krieges</strong> mit der Atommacht Russland (No-Fly-Zone wurde abgelehnt). Die Strategie lautet: „So viel Hilfe wie nötig, ohne selbst Kriegspartei zu werden.“</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Europäische Union (Zusatz) -->
+                <div class="accordion-item bg-slate-700 rounded-lg overflow-hidden border border-slate-600">
+                    <button class="w-full p-6 text-left flex justify-between items-center hover:bg-slate-600 transition focus:outline-none" onclick="toggleAcc(this)">
+                        <span class="text-xl font-bold flex items-center"><i data-lucide="landmark" class="mr-3 text-yellow-500"></i> Europäische Union</span>
+                        <i data-lucide="chevron-down" class="transition-transform duration-300"></i>
+                    </button>
+                    <div class="accordion-content p-6 border-t border-slate-600 text-slate-300">
+                        <div class="grid md:grid-cols-2 gap-8">
+                            <div>
+                                <h4 class="font-bold text-yellow-400 mb-3 text-lg border-b border-yellow-400/30 pb-1">Werte & Wirtschaft</h4>
+                                <ul class="list-disc list-inside space-y-2 text-sm">
+                                    <li><strong>Sicherheitsautonomie:</strong> Aufbau einer eigenständigeren Verteidigungsfähigkeit („Strategische Autonomie“).</li>
+                                    <li><strong>Energiesicherheit:</strong> Schnelle Abkehr von russischen fossilen Energieträgern und Diversifizierung der Importe.</li>
+                                    <li><strong>Solidarität:</strong> Management der Flüchtlingsbewegungen und finanzielle Stabilisierung der Ukraine.</li>
+                                </ul>
+                            </div>
+                            <div>
+                                <h4 class="font-bold text-yellow-400 mb-3 text-lg border-b border-yellow-400/30 pb-1">Herausforderung</h4>
+                                <p class="text-sm leading-relaxed">Die EU muss den Spagat zwischen <strong>harten Sanktionen</strong> und der Aufrechterhaltung der <strong>inneren sozialen Stabilität</strong> (Inflation, Energiekosten) meistern.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </section>
+
+    <!-- 5. IB-Theorien -->
+    <section id="theories" class="py-24 bg-slate-900">
+        <div class="container mx-auto px-6">
+            <h2 class="text-3xl font-bold mb-12 text-center">Analytische Perspektiven: IB-Theorien</h2>
+            <div class="grid md:grid-cols-3 gap-8">
+                <!-- Realismus -->
+                <div class="p-8 bg-slate-800 rounded-2xl border-t-4 border-rose-500 shadow-xl transition-all hover:scale-105">
+                    <h3 class="text-2xl font-bold mb-4 text-rose-500">Realismus / Neorealismus</h3>
+                    <div class="space-y-4 text-slate-300 text-sm leading-relaxed">
+                        <p><strong>Kernannahme:</strong> Die internationale Politik ist ein Nullsummenspiel in einem anarchischen System. Staaten sind rationale, einheitliche Akteure, deren primäres Ziel das Überleben und die Machtmaximierung ist.</p>
+                        <p><strong>Analyse des Konflikts:</strong> Der Krieg wird als Resultat eines <strong>Sicherheitsdilemmas</strong> gesehen. Die NATO-Osterweiterung wird von Russland als Bedrohung wahrgenommen, worauf Russland mit Aufrüstung und Aggression reagiert, um ein Gleichgewicht der Kräfte (Balance of Power) wiederherzustellen.</p>
+                        <p class="italic text-rose-400/80">Stichwort: „Macht vor Recht“ – Die Ukraine als Manövriermasse großer Mächte.</p>
+                    </div>
+                </div>
+                <!-- Liberalismus -->
+                <div class="p-8 bg-slate-800 rounded-2xl border-t-4 border-blue-500 shadow-xl transition-all hover:scale-105">
+                    <h3 class="text-2xl font-bold mb-4 text-blue-500">Liberalismus / Institutionalismus</h3>
+                    <div class="space-y-4 text-slate-300 text-sm leading-relaxed">
+                        <p><strong>Kernannahme:</strong> Frieden ist möglich durch wirtschaftliche Verflechtung (Interdependenz), demokratische Strukturen und internationale Organisationen.</p>
+                        <p><strong>Analyse des Konflikts:</strong> Der Krieg markiert das Scheitern der „Wandel durch Handel“-Politik. Liberale betonen den <strong>Systemgegensatz</strong>: Eine gefestigte Demokratie in der Ukraine bedroht die Legitimität der russischen Autokratie. Internationale Institutionen (UN, OSZE) haben versagt, da Russland sein Vetorecht missbraucht.</p>
+                        <p class="italic text-blue-400/80">Stichwort: „Demokratischer Frieden“ – Verteidigung der regelbasierten Weltordnung.</p>
+                    </div>
+                </div>
+                <!-- Konstruktivismus -->
+                <div class="p-8 bg-slate-800 rounded-2xl border-t-4 border-accent shadow-xl transition-all hover:scale-105">
+                    <h3 class="text-2xl font-bold mb-4 text-accent">Konstruktivismus</h3>
+                    <div class="space-y-4 text-slate-300 text-sm leading-relaxed">
+                        <p><strong>Kernannahme:</strong> Materielle Faktoren sind weniger wichtig als Ideen, Identitäten und Normen. Sicherheit ist das, was Staaten daraus machen.</p>
+                        <p><strong>Analyse des Konflikts:</strong> Hier stehen sich <strong>Narrative</strong> gegenüber. Putin konstruiert eine historische Identität der „Russischen Welt“ (Russki Mir), um territoriale Ansprüche zu rechtfertigen. Die Ukraine wiederum hat durch den Widerstand eine neue, pro-europäische Identität gefestigt, die sich radikal von der sowjetischen Vergangenheit abwendet.</p>
+                        <p class="italic text-accent/80">Stichwort: „Identitätsbildung“ – Der Krieg als Kampf um die nationale Seele.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 6. Globales / Flüchtlinge -->
+    <section id="global" class="py-24 bg-slate-800">
+        <div class="container mx-auto px-6">
+            <div class="grid md:grid-cols-2 gap-12 items-center">
+                <div data-aos="fade-right">
+                    <h2 class="text-3xl font-bold mb-6">Humanitäre Auswirkungen</h2>
+                    <div class="chart-container">
+                        <canvas id="refugeeChart"></canvas>
+                    </div>
+                </div>
+                <div class="bg-slate-900 p-8 rounded-2xl border border-slate-700" data-aos="fade-left">
+                    <h3 class="text-xl font-bold mb-4 text-accent">Analyse der Fluchtbewegung</h3>
+                    <p class="text-slate-300">Seit Februar 2022 haben über 8 Millionen Ukrainer ihr Land verlassen. Der rasanteste Anstieg erfolgte unmittelbar nach Invasionsbeginn.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 7. Handlungsoptionen -->
+    <section id="options" class="py-24 bg-slate-900">
+        <div class="container mx-auto px-6">
+            <h2 class="text-3xl font-bold mb-12 text-center">Handlungsoptionen & Strategische Instrumente</h2>
+            <div class="grid md:grid-cols-3 gap-8">
+                <!-- Militärisch -->
+                <div class="bg-slate-800 p-8 rounded-2xl border-l-8 border-rose-500 hover:bg-slate-700/50 transition">
+                    <h3 class="text-xl font-bold mb-4 flex items-center text-rose-500"><i data-lucide="sword" class="mr-3"></i> Militärische Säule</h3>
+                    <ul class="text-sm text-slate-300 space-y-4">
+                        <li><strong>Qualitative Eskalation:</strong> Übergang von defensiven Waffen (Javelin) zu komplexen Angriffssystemen (ATACMS, F-16), um die operative Initiative zurückzugewinnen.</li>
+                        <li><strong>Intelligence Sharing:</strong> Integration der Ukraine in das globale Satelliten- und Überwachungsnetzwerk der NATO zur präzisen Bekämpfung logistischer Knotenpunkte.</li>
+                        <li><strong>Infrastruktur-Schutz:</strong> Aufbau eines mehrschichtigen Raketenabwehrschirms (IRIS-T, Patriot) zum Schutz der zivilen Energieversorgung.</li>
+                    </ul>
+                </div>
+                <!-- Ökonomisch -->
+                <div class="bg-slate-800 p-8 rounded-2xl border-l-8 border-blue-500 hover:bg-slate-700/50 transition">
+                    <h3 class="text-xl font-bold mb-4 flex items-center text-blue-500"><i data-lucide="banknote" class="mr-3"></i> Ökonomische Säule</h3>
+                    <ul class="text-sm text-slate-300 space-y-4">
+                        <li><strong>Dual-Use Embargo:</strong> Totale Blockade kritischer Elektronikbauteile, um die russische Präzisionswaffenproduktion langfristig zu lähmen.</li>
+                        <li><strong>Asset Freezing:</strong> Rechtliche Vorbereitung zur Nutzung eingefrorener russischer Zentralbankguthaben (ca. 300 Mrd. $) für den ukrainischen Wiederaufbau.</li>
+                        <li><strong>Sekundärsanktionen:</strong> Druck auf Drittstaaten (Indien, China), um die Umgehung westlicher Sanktionen zu unterbinden.</li>
+                    </ul>
+                </div>
+                <!-- Diplomatisch -->
+                <div class="bg-slate-800 p-8 rounded-2xl border-l-8 border-accent hover:bg-slate-700/50 transition">
+                    <h3 class="text-xl font-bold mb-4 flex items-center text-accent"><i data-lucide="message-square" class="mr-3"></i> Diplomatische Säule</h3>
+                    <ul class="text-sm text-slate-300 space-y-4">
+                        <li><strong>Outreach „Globaler Süden“:</strong> Aktive Diplomatie in Afrika und Lateinamerika, um den Krieg nicht als rein westlich-russischen Konflikt erscheinen zu lassen.</li>
+                        <li><strong>Justiz-Offensive:</strong> Dokumentation und Verfolgung von Verbrechen gegen die Menschlichkeit durch ein Sondertribunal (Aggressionsverbrechen).</li>
+                        <li><strong>EU-Beitrittspfad:</strong> Nutzung der Beitrittskandidatur als Reformhebel für Rechtsstaatlichkeit und Korruptionsbekämpfung.</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 8. Zukunftsszenarien -->
+    <section id="future" class="py-24 bg-slate-800">
+        <div class="container mx-auto px-6">
+            <h2 class="text-3xl font-bold mb-12 text-center">Zukunftsszenarien & Geopolitische Prognosen</h2>
+            <div class="grid md:grid-cols-3 gap-10">
+                <!-- Szenario 1 -->
+                <div class="group p-8 bg-slate-900 rounded-3xl border border-slate-700 relative overflow-hidden transition-all hover:border-rose-500">
+                    <div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-100 transition">
+                        <i data-lucide="clock" class="w-12 h-12 text-rose-500"></i>
+                    </div>
+                    <h4 class="text-xl font-bold mb-4 text-rose-500">Szenario I: Chronischer Abnutzungskrieg</h4>
+                    <p class="text-sm text-slate-400 leading-relaxed mb-6">
+                        Keine Seite erzielt einen strategischen Durchbruch. Es entwickelt sich eine Situation ähnlich dem Ersten Weltkrieg: Hohe Verluste bei minimalen Geländegewinnen. 
+                    </p>
+                    <div class="p-4 bg-slate-800 rounded-lg">
+                        <p class="text-xs font-bold uppercase text-slate-500 mb-2">Konsequenz:</p>
+                        <p class="text-xs text-slate-300 italic">Dauerhafte Militarisierung Europas, wirtschaftliche Erschöpfung der Ukraine und wachsende Kriegsmüdigkeit im Westen.</p>
+                    </div>
+                </div>
+                <!-- Szenario 2 -->
+                <div class="group p-8 bg-slate-900 rounded-3xl border border-slate-700 relative overflow-hidden transition-all hover:border-blue-500">
+                    <div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-100 transition">
+                        <i data-lucide="globe" class="w-12 h-12 text-blue-500"></i>
+                    </div>
+                    <h4 class="text-xl font-bold mb-4 text-blue-500">Szenario II: Zweiteilung (Korea-Modell)</h4>
+                    <p class="text-sm text-slate-400 leading-relaxed mb-6">
+                        Ein Waffenstillstand entlang der Frontlinie ohne Friedensschluss. Die Ukraine wird de facto geteilt. Der freie Teil integriert sich massiv in EU und NATO.
+                    </p>
+                    <div class="p-4 bg-slate-800 rounded-lg">
+                        <p class="text-xs font-bold uppercase text-slate-500 mb-2">Konsequenz:</p>
+                        <p class="text-xs text-slate-300 italic">Ein neuer „Eiserner Vorhang“, permanente Hochrüstung an der Grenze und die Notwendigkeit von nuklearen Sicherheitsgarantien.</p>
+                    </div>
+                </div>
+                <!-- Szenario 3 -->
+                <div class="group p-8 bg-slate-900 rounded-3xl border border-slate-700 relative overflow-hidden transition-all hover:border-accent">
+                    <div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-100 transition">
+                        <i data-lucide="zap" class="w-12 h-12 text-accent"></i>
+                    </div>
+                    <h4 class="text-xl font-bold mb-4 text-accent">Szenario III: Systemischer Umbruch</h4>
+                    <p class="text-sm text-slate-400 leading-relaxed mb-6">
+                        Ein Kollaps des russischen Militärapparates oder ein Machtwechsel im Kreml führt zu einem Rückzug. Alternativ: Ein Sieg Russlands durch Ausbleiben westlicher Hilfe.
+                    </p>
+                    <div class="p-4 bg-slate-800 rounded-lg">
+                        <p class="text-xs font-bold uppercase text-slate-500 mb-2">Konsequenz:</p>
+                        <p class="text-xs text-slate-300 italic">Völlige Neuordnung Eurasiens. Entweder Ende der russischen Großmachtansprüche oder Destabilisierung des Baltikums und Polens.</p>
+                    </div>
+                </div>
+            </div>
+            <!-- Geopolitischer Ausblick -->
+            <div class="mt-12 bg-slate-900 p-8 rounded-2xl border border-slate-700" data-aos="fade-up">
+                <h4 class="text-xl font-bold mb-4 text-slate-200">Der „Elefant im Raum“: Die Rolle Chinas</h4>
+                <p class="text-slate-400 text-sm leading-relaxed">
+                    Langfristig entscheidet die Haltung Pekings über den Ausgang. Eine verstärkte Unterstützung Chinas könnte Russland stabilisieren, während eine Distanzierung Putin zu Verhandlungen zwingen könnte. Der Ukraine-Krieg beschleunigt zudem die Bildung zweier Blöcke: Die westliche Allianz gegen eine informelle Achse Moskau-Peking-Teheran.
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <footer class="py-12 bg-slate-950 text-slate-500 text-center border-t border-slate-800">
+        <p class="text-xs uppercase tracking-widest">&copy; 2024 Politik-Analyse | Russland-Ukraine</p>
+    </footer>
+
+    <script>
+        AOS.init({ duration: 800, once: true });
+        lucide.createIcons();
+
+        function toggleAcc(button) {
+            const item = button.parentElement;
+            const isActive = item.classList.contains('active');
+            document.querySelectorAll('.accordion-item').forEach(i => i.classList.remove('active'));
+            if (!isActive) item.classList.add('active');
+        }
+
+        // Map setup
+        const map = L.map('map').setView([49.0, 31.0], 5);
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png').addTo(map);
+
+        const markers = [
+            { lat: 50.45, lng: 30.52, title: "Kiew", desc: "Zentrum des Widerstands.", type: "city" },
+            { lat: 44.95, lng: 34.10, title: "Krim", desc: "Strategische Basis Russlands.", type: "city" },
+            { lat: 48.60, lng: 38.00, title: "Donbass", desc: "Zentrum des Abnutzungskrieges.", type: "front" }
+        ];
+
+        markers.forEach(m => {
+            const color = m.type === "front" ? "#e11d48" : "#3b82f6";
+            L.circleMarker([m.lat, m.lng], { radius: 8, fillColor: color, color: "#fff", weight: 2, fillOpacity: 0.8 }).addTo(map).bindPopup(`<b>${m.title}</b><br>${m.desc}`);
+        });
+
+        // Fluchtkorridore
+        const routes = [
+            [[50.45, 30.52], [49.83, 24.02], [52.23, 21.01]], // Kiew -> Lwiw -> Warschau
+            [[46.48, 30.72], [47.01, 28.86], [44.42, 26.10]], // Odessa -> Moldau -> Bukarest
+            [[49.99, 36.23], [49.83, 24.02]] // Charkiw -> Lwiw
+        ];
+
+        routes.forEach(route => {
+            L.polyline(route, { color: '#facc15', weight: 3, dashArray: '5, 10', opacity: 0.6 }).addTo(map);
+        });
+
+        L.circle([52.0, 21.0], { color: 'blue', fillOpacity: 0.05, radius: 450000 }).addTo(map).bindTooltip("NATO Territorium");
+
+        // Chart
+        const ctx = document.getElementById('refugeeChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: ['Feb 22', 'Mär 22', 'Mai 22', 'Sep 22', 'Jan 23', 'Jan 24'],
+                datasets: [{
+                    label: 'Geflüchtete (Mio)',
+                    data: [0, 4.0, 6.5, 7.5, 8.1, 8.4],
+                    borderColor: '#e11d48',
+                    backgroundColor: 'rgba(225, 29, 72, 0.2)',
+                    fill: true
+                }]
+            },
+            options: { responsive: true, maintainAspectRatio: false }
+        });
+    </script>
+</body>
+</html>
